@@ -1,0 +1,66 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 28
+    defaultConfig {
+        applicationId "io.naturali.dhldemo"
+        minSdkVersion 21
+        targetSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repositories {
+    flatDir {
+        dirs 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$rootProject.ext.kotlinVersion"
+    implementation "androidx.appcompat:appcompat:${rootProject.ext.appcompatVersion}"
+    implementation "androidx.constraintlayout:constraintlayout:${rootProject.ext.constraintlayoutVersion}"
+    implementation "androidx.recyclerview:recyclerview:${rootProject.ext.recyclerviewVersion}"
+
+    implementation 'net.sourceforge.javaflacencoder:java-flac-encoder:0.3.6'
+
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$rootProject.ext.coroutinesVersion"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$rootProject.ext.coroutinesVersion"
+
+    // Gson
+    implementation "com.google.code.gson:gson:$rootProject.ext.gsonVersion"
+
+    // RxJava
+    implementation "io.reactivex.rxjava2:rxandroid:$rootProject.ext.rxAndroidVersion"
+    implementation "io.reactivex.rxjava2:rxjava:$rootProject.ext.rxJavaVersion"
+
+    // androidx library
+    implementation "androidx.annotation:annotation:$rootProject.ext.annotationVersion"
+    implementation "androidx.localbroadcastmanager:localbroadcastmanager:$rootProject.ext.localbroadcastmanagerVersion"
+
+    // grpc
+    implementation "io.grpc:grpc-protobuf-lite:$rootProject.ext.grpcVersion"
+    implementation 'javax.annotation:javax.annotation-api:1.2'
+
+    // OkHttp
+    implementation("com.squareup.okhttp3:okhttp:3.12.0")
+
+    //DBFlow
+    annotationProcessor "com.github.Raizlabs.DBFlow:dbflow-processor:${rootProject.ext.dbflowVersion}"
+    implementation "com.github.Raizlabs.DBFlow:dbflow-core:${rootProject.ext.dbflowVersion}"
+    implementation "com.github.Raizlabs.DBFlow:dbflow:${rootProject.ext.dbflowVersion}"
+    implementation "com.github.Raizlabs.DBFlow:dbflow-kotlinextensions:${rootProject.ext.dbflowVersion}"
+    implementation "com.github.Raizlabs.DBFlow:dbflow-sqlcipher:${rootProject.ext.dbflowVersion}"
+    implementation "net.zetetic:android-database-sqlcipher:${rootProject.ext.sqlCipherVersion}@aar"
+
+    implementation(name: "DHL_sdk_android_speech_${rootProject.ext.dhlVersion}", ext: 'aar')
+    implementation(name: "DHL_sdk_android_common_${rootProject.ext.dhlVersion}", ext: 'aar')
+}
