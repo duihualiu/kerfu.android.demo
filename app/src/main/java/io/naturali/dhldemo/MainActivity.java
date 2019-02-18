@@ -1,6 +1,7 @@
 package io.naturali.dhldemo;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
@@ -15,6 +16,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.gson.Gson;
+import io.naturali.common.data.bean.AttributeRequest;
 import io.naturali.common.data.bean.EntityRequest;
 import io.naturali.common.data.bean.MessageRequest;
 import io.naturali.common.data.bean.MessageResult;
@@ -46,7 +48,9 @@ public class MainActivity extends AppCompatActivity {
 
     private String mUserId = "aaa";
     private String mAgentId = "";
+    private String mTag = MainActivity.class.getSimpleName();
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -55,26 +59,30 @@ public class MainActivity extends AppCompatActivity {
         if (VERSION.SDK_INT >= VERSION_CODES.M) {
             requestPermissions(PERMISSIONS, 101);
         }
-        MessageManager.init(this);
-        MessageManager.initUserInfo(new UserInfo(mUserId, "bbb"));
-        SpeechRecognizerWrapper.getInstance().init(this.getApplicationContext());
-        mTextView = findViewById(R.id.input_text);
-        mButton = findViewById(R.id.input_button);
-        mRecyclerView = findViewById(R.id.recyclerView);
-        mMessageAdapter = new MessageAdapter(new ArrayList<MessageResult>());
-        mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        mRecyclerView.setAdapter(mMessageAdapter);
 
+        // 初始化 SDK
+        MessageManager.init(this);
+
+        // 初始化用户信息
+        MessageManager.initUserInfo(new UserInfo(mUserId, "bbb"));
+
+        // 初始化语音识别模块
+        SpeechRecognizerWrapper.getInstance().init(this.getApplicationContext());
+
+        // 初始化 UI
+        initView();
+
+        // 创建一个MessageManager对象并设置监听
         final MessageManager manager = new MessageManager(mAgentId);
         manager.setListener(new MessageListener() {
             @Override
             public void onReceive(MessageResult messageResult) {
-                Log.e("PP", "onReceive 1 : " + new Gson().toJson(messageResult));
+                Log.e(mTag, "onReceive message result : " + new Gson().toJson(messageResult));
             }
 
             @Override
             public void onReceive(List<MessageResult> list) {
-                Log.e("PP", "onReceive 2 : " + new Gson().toJson(list));
+                Log.e(mTag, "onReceive message result list : " + new Gson().toJson(list));
                 mMessageAdapter.replace(list);
             }
 
@@ -87,17 +95,18 @@ public class MainActivity extends AppCompatActivity {
         mButton.setOnTouchListener(new OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                Log.e("CC", "onTouch : " + MotionEvent.actionToString(event.getAction()));
 
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN: {
 
+                        // 添加语音识别时的动态实体，用于增强语音识别准确度
                         final EntityRequest entityRequest = new EntityRequest();
                         entityRequest.setTypeName("NaturaliTest.动态实体测试");
                         Map<String, List<String>> entityValues = new HashMap<>();
                         entityValues.put("李明", new ArrayList<String>());
                         entityRequest.setValues(entityValues);
 
+                        // 构建语音识别参数
                         Bundle bundle = new SpeechExtras.Builder()
                             .agentId(mAgentId)
                             .userId(mUserId)
@@ -106,22 +115,23 @@ public class MainActivity extends AppCompatActivity {
                             .addEntityRequest(entityRequest)
                             .build();
 
+                        // 开始录音并进行识别
                         SpeechRecognizerWrapper.getInstance().start(new SpeechListener() {
                             @Override
                             public void onReadyForSpeech(Bundle bundle) {
-                                Log.e("CC", "onReadyForSpeech : ");
+                                Log.e(mTag, "onReadyForSpeech : ");
 
                             }
 
                             @Override
                             public void onRmsChanged(float v) {
-                                Log.e("CC", "onRmsChanged : " + v);
+                                Log.e(mTag, "onRmsChanged : " + v);
 
                             }
 
                             @Override
                             public void onBeginningOfSpeech() {
-                                Log.e("CC", "onBeginningOfSpeech : ");
+                                Log.e(mTag, "onBeginningOfSpeech : ");
 
                             }
 
@@ -132,7 +142,7 @@ public class MainActivity extends AppCompatActivity {
 
                             @Override
                             public void onEndOfSpeech() {
-                                Log.e("CC", "onEndOfSpeech : ");
+                                Log.e(mTag, "onEndOfSpeech : ");
 
                             }
 
@@ -141,20 +151,15 @@ public class MainActivity extends AppCompatActivity {
                                 String text = bundle
                                     .getString(SpeechRecognizer.RESULTS_RECOGNITION);
                                 mTextView.setText(text);
-                                MessageRequest request = new MessageRequest.Builder()
-                                    .agentId(mAgentId)
-                                    .query(text)
-                                    .userId(mUserId)
-                                    .addEntityRequest(entityRequest)
-                                    .build();
-                                manager.sendMessage(request);
+
+                                sendMessage(text, manager, entityRequest);
                             }
 
                             @Override
                             public void onPartialResults(Bundle bundle) {
                                 String text = bundle
                                     .getString(SpeechRecognizer.RESULTS_RECOGNITION);
-                                Log.e("CC", "onPartialResults : " + text);
+                                Log.e(mTag, "onPartialResults : " + text);
                                 mTextView.setText(text);
                             }
 
@@ -178,5 +183,41 @@ public class MainActivity extends AppCompatActivity {
                 return false;
             }
         });
+    }
+
+    private void initView() {
+        mTextView = findViewById(R.id.input_text);
+        mButton = findViewById(R.id.input_button);
+        mRecyclerView = findViewById(R.id.recyclerView);
+        mMessageAdapter = new MessageAdapter(new ArrayList<MessageResult>());
+        mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        mRecyclerView.setAdapter(mMessageAdapter);
+    }
+
+    private void sendMessage(String message, MessageManager manager, EntityRequest entityRequest) {
+
+        // 创建全局属性
+        AttributeRequest globalAttribute = new AttributeRequest();
+        globalAttribute.setName("name");
+        globalAttribute.setValue("value");
+
+        // 创建本地属性
+        AttributeRequest localAttribute = new AttributeRequest();
+        localAttribute.setName("name");
+        localAttribute.setValue("value");
+
+        // 将语音识别结果构造成一个请求对象
+        MessageRequest request = new MessageRequest.Builder()
+            .agentId(mAgentId) // 当前服务的agent id
+            .query(message) // 发送的文字信息
+            .userId(mUserId) // 设置 userid
+            .addEntityRequest(entityRequest) // 添加动态实体，多次调用可添加多个
+            .addGlobalAttribute(globalAttribute) // 添加全局属性，可多次调用添加多个
+            .addLocalAttribute(localAttribute) // 添加本地属性，可多次调用添加多个
+            .intentName("intent name") // 上述 attribute 对应的 intent 名称
+            .build();
+
+        // 发送 message 请求
+        manager.sendMessage(request);
     }
 }

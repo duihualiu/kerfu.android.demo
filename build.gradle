@@ -47,5 +47,6 @@ ext {
     glideVersion = "4.8.0"
     dbflowVersion = "4.2.4"
     sqlCipherVersion = "3.5.9"
-    dhlVersion = "0.0.71"
+    dhlVersion = "0.0.72"
+    appVersion = 0072
 }
